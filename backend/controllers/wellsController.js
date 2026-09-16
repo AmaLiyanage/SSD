@@ -201,25 +201,34 @@ export const updateWell = async (req, res) => {
     const updateData = {};
 
     if (name) updateData.name = name.trim();
+
     if (village) updateData.village = village.trim();
+
     if (depth) {
       if (depth <= 0) {
         return res.status(400).json({
           message: "Depth must be greater than 0",
         });
       }
+
       updateData.depth = depth;
     }
+
     if (type) updateData.type = type;
 
     const well = await Well.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { returnDocument: "after" }
+      {
+        returnDocument: "after",
+        runValidators: true,
+      }
     );
 
     if (!well) {
-      return res.status(404).json({ message: "Well not found" });
+      return res.status(404).json({
+        message: "Well not found",
+      });
     }
 
     res.status(200).json({
@@ -229,10 +238,22 @@ export const updateWell = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Update well error:", error);
+
+    // Handle Mongoose validation errors
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid well data",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
-
 
 
 
