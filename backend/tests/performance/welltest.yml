@@ -1,0 +1,21 @@
+config:
+  # Replace with your actual local server port
+  target: 'http://localhost:5000'
+  phases:
+    # Phase 1: Warm up the server (5 users per second for 10 seconds)
+    - duration: 10
+      arrivalRate: 5
+      name: "Warm up"
+    # Phase 2: Spike load (20 users per second for 30 seconds)
+    - duration: 30
+      arrivalRate: 20
+      name: "Sustained high load"
+
+scenarios:
+  - name: "Fetch all wells"
+    flow:
+      - get:
+          url: "/api/wells"
+          # Since your route is protected, you must provide a valid JWT token here
+          headers:
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OGIwZGYzZTQ3ODE1ODhhOTJkNmYwYyIsImlhdCI6MTc3NTE4Njk0NiwiZXhwIjoxNzc1NzkxNzQ2fQ.OGDo7DaBjFFoLP2miTgwdHDfKhhnkQq3f5mgyzWbFu8"
