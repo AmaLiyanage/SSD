@@ -1,0 +1,26 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 20
+      arrivalRate: 1
+      rampTo: 10
+      name: "Warm up Phase"
+    - duration: 60
+      arrivalRate: 20
+      name: "Sustained High Load"
+
+  # Useful for seeing errors in detail during the test
+  http:
+    timeout: 10
+
+scenarios:
+  - name: "Fetch all reports"
+    flow:
+      - get:
+          url: "/api/reports"
+          headers:
+            # Tip: Ensure this token is valid and doesn't expire during the test!
+            Authorization: "Bearer YOUR_JWT_TOKEN_HERE"
+          expect:
+            - statusCode: 200
+            - contentType: json
