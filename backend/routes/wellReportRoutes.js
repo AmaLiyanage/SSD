@@ -1,6 +1,6 @@
 import express from "express";
 import { body, param, validationResult } from "express-validator";
-import upload from "../middleware/upload.js";
+import upload, { handleUploadError } from "../middleware/upload.js";
 import {
   createReport,
   getReports,
@@ -18,7 +18,6 @@ import {
 // --- MIDDLEWARE IMPORTS ---
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 import { allowRoles } from "../middleware/roleMiddleware.js";
-
 
 const router = express.Router();
 
@@ -44,8 +43,9 @@ router.get("/:id", protect, allowRoles("admin", "field_officer", "customer", "co
 router.post(
   "/",
   protect,
-  allowRoles("admin", "field_officer"), 
+  allowRoles("admin", "field_officer"),
   upload.single("photo"),
+  handleUploadError,
   body("wellId").notEmpty().withMessage("Well ID is required"),
   body("waterLevel").isIn(["High", "Medium", "Low"]).withMessage("Invalid water level"),
   body("pumpStatus").isIn(["Working", "Damaged", "Missing"]).withMessage("Invalid pump status"),
@@ -57,8 +57,9 @@ router.post(
 router.put(
   "/:id",
   protect,
-  allowRoles("admin", "field_officer"), 
+  allowRoles("admin", "field_officer"),
   upload.single("photo"),
+  handleUploadError,
   param("id").isMongoId().withMessage("Invalid report ID"),
   body("description").optional().isLength({ min: 10 }).withMessage("Description must be at least 10 characters"),
   validate,
@@ -71,7 +72,7 @@ router.delete("/:id", protect, authorizeRoles("field_officer"), deleteReport);
 router.post(
   "/:id/comments",
   protect,
-  allowRoles("admin", "field_officer"), 
+  allowRoles("admin", "field_officer"),
   param("id").isMongoId().withMessage("Invalid report ID"),
   body("message").isLength({ min: 3 }).withMessage("Comment must be at least 3 characters"),
   validate,
@@ -81,7 +82,7 @@ router.post(
 router.put(
   "/:reportId/comments/:commentId",
   protect,
-  allowRoles("admin", "field_officer"), 
+  allowRoles("admin", "field_officer"),
   param("reportId").isMongoId().withMessage("Invalid report ID"),
   param("commentId").isMongoId().withMessage("Invalid comment ID"),
   body("message").isLength({ min: 3 }).withMessage("Comment must be at least 3 characters"),
@@ -92,7 +93,7 @@ router.put(
 router.delete(
   "/:reportId/comments/:commentId",
   protect,
-  allowRoles("admin", "field_officer"), 
+  allowRoles("admin", "field_officer"),
   param("reportId").isMongoId().withMessage("Invalid report ID"),
   param("commentId").isMongoId().withMessage("Invalid comment ID"),
   validate,
