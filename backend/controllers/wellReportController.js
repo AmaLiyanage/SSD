@@ -191,18 +191,10 @@ export const getSingleReport = async (req, res) => {
   }
 };
 
-
 // UPDATE REPORT
 export const updateReport = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Validate MongoDB ObjectId before querying
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        message: "Invalid report ID"
-      });
-    }
 
     const {
       waterLevel,
@@ -216,6 +208,18 @@ export const updateReport = async (req, res) => {
 
     if (!report) {
       return res.status(404).json({ message: "Report not found" });
+    }
+
+    // Authorization check:
+    // Admins can update any report.
+    // Field officers can update only their own reports.
+    if (
+      req.user.role !== "admin" &&
+      report.reportedBy.toString() !== req.user.id.toString()
+    ) {
+      return res.status(403).json({
+        message: "You do not have permission to update this report",
+      });
     }
 
     // Update fields if provided
@@ -244,10 +248,7 @@ export const updateReport = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Update report error:", error);
-    res.status(500).json({
-      message: "Unable to update report"
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -257,13 +258,6 @@ export const deleteReport = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate MongoDB ObjectId before querying
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        message: "Invalid report ID"
-      });
-    }
-
     // Find the report
     const report = await Report.findById(id);
 
@@ -271,7 +265,19 @@ export const deleteReport = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
-    //Delete images from server
+    // Authorization check:
+    // Admins can delete any report.
+    // Field officers can delete only their own reports.
+    if (
+      req.user.role !== "admin" &&
+      report.reportedBy.toString() !== req.user.id.toString()
+    ) {
+      return res.status(403).json({
+        message: "You do not have permission to delete this report",
+      });
+    }
+
+    // Delete images from server
     if (report.photos && report.photos.length > 0) {
       report.photos.forEach(photo => {
         const filePath = path.join("uploads", photo);
@@ -284,13 +290,12 @@ export const deleteReport = async (req, res) => {
     // Delete the report from database
     await report.deleteOne();
 
-    res.status(200).json({ message: "Report deleted successfully" });
+    res.status(200).json({
+      message: "Report deleted successfully",
+    });
 
   } catch (error) {
-    console.error("Delete report error:", error);
-    res.status(500).json({
-      message: "Unable to delete report"
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
