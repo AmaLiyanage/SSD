@@ -66,7 +66,12 @@ router.put(
   updateReport
 );
 
-router.delete("/:id", protect, authorizeRoles("field_officer"), deleteReport);
+router.delete(
+  "/:id",
+  protect,
+  allowRoles("admin", "field_officer"),
+  deleteReport
+);
 
 // --- COMMENT ACTIONS (Admin & Field Officer Access) ---
 router.post(
