@@ -6,10 +6,11 @@ const Signup = () => {
   const { signup } = useAuth();
   const navigate = useNavigate();
 
+  // No `role` field: self-registration always creates a low privilege
+  // community user. Privileged roles are granted by an admin only.
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    role: "customer",
   });
 
   const [loading, setLoading] = useState(false);
@@ -137,42 +138,17 @@ const Signup = () => {
               value={formData.password}
               onChange={handleChange}
               required
+              minLength={8}
               disabled={loading || googleLoading}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none transition focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
             />
 
           </div>
 
-          {/* Role */}
-          <div>
-
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Account Type
-            </label>
-
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              disabled={loading || googleLoading}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg outline-none transition focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white disabled:bg-gray-100"
-            >
-
-              <option value="customer">
-                Customer
-              </option>
-
-              <option value="field_officer">
-                Field Officer
-              </option>
-
-              <option value="lab_tester">
-                Lab Tester
-              </option>
-
-            </select>
-
-          </div>
+          <p className="text-xs text-gray-500">
+            New accounts are created as community users. Contact an
+            administrator if you need staff access.
+          </p>
 
           {/* Signup Button */}
           <button
