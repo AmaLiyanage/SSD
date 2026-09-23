@@ -29,6 +29,7 @@ router.post(
     protect,
     authorizeRoles('lab_tester', 'admin'),
     addTestResult
+    
 );
 
 
