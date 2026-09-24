@@ -76,7 +76,15 @@ export const addTestResult = async (req, res) => {
             temperature: Number(temperature)
         });
 
-        const newTest = new WaterQuality({ ...req.body, status });
+       // const newTest = new WaterQuality({ ...req.body, status });
+
+        const newTest = new WaterQuality({
+        ...req.body,
+        status,
+        createdBy: req.user._id
+    });
+
+
         const savedTest = await newTest.save();
         const populatedTest = await WaterQuality.findById(savedTest._id)
             .populate('wellId', 'wellId name village location type depth');
@@ -146,9 +154,24 @@ export const updateTestResult = async (req, res) => {
             return res.status(400).json({ message: "Validation Error", errors });
         }
 
-        const existingTest = await WaterQuality.findById(req.params.id);
+    //    const existingTest = await WaterQuality.findById(req.params.id);
+
+    //     if (!existingTest) {
+    //         return res.status(404).json({ message: "Record not found" });
+    //     }
+    // 
+    const existingTest = await WaterQuality.findById(req.params.id);
         if (!existingTest) {
             return res.status(404).json({ message: "Record not found" });
+        }
+ 
+        if (
+            req.user.role !== 'admin' &&
+            existingTest.createdBy.toString() !== req.user._id.toString()
+        ) {
+            return res.status(403).json({
+                message: "You are not authorized to modify this report"
+            });
         }
 
         const mergedData = {
@@ -168,19 +191,62 @@ export const updateTestResult = async (req, res) => {
     }
 };
 
+// export const deleteTestResult = async (req, res) => {
+//     try {
+//         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+//             return res.status(400).json({ message: "Validation Error", error: "Invalid id" });
+//         }
+
+//         const deleted = await WaterQuality.findByIdAndDelete(req.params.id);
+//         if (!deleted) {
+//             return res.status(404).json({ message: "Record not found" });
+//         }
+//         res.status(200).json({ message: "Record deleted successfully" });
+//     } catch (err) {
+//         res.status(500).json({ message: "Delete failed", error: err.message });
+//     }
+
+// };
+
+
 export const deleteTestResult = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ message: "Validation Error", error: "Invalid id" });
+            return res.status(400).json({
+                message: "Validation Error",
+                error: "Invalid id"
+            });
         }
 
-        const deleted = await WaterQuality.findByIdAndDelete(req.params.id);
-        if (!deleted) {
-            return res.status(404).json({ message: "Record not found" });
+        const existingTest = await WaterQuality.findById(req.params.id);
+
+        if (!existingTest) {
+            return res.status(404).json({
+                message: "Record not found"
+            });
         }
-        res.status(200).json({ message: "Record deleted successfully" });
+
+        // Admin can delete any report.
+        // Lab tester can delete only their own report.
+        if (
+            req.user.role !== 'admin' &&
+            existingTest.createdBy.toString() !== req.user._id.toString()
+        ) {
+            return res.status(403).json({
+                message: "You are not authorized to delete this report"
+            });
+        }
+
+        await WaterQuality.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({
+            message: "Record deleted successfully"
+        });
+
     } catch (err) {
-        res.status(500).json({ message: "Delete failed", error: err.message });
+        res.status(500).json({
+            message: "Delete failed",
+            error: err.message
+        });
     }
-
 };

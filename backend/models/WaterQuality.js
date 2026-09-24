@@ -4,18 +4,13 @@ import mongoose from 'mongoose';
 const WaterQualitySchema = new mongoose.Schema({
     wellId: { type: mongoose.Schema.Types.ObjectId, ref: 'Well', required: true },
     testDate: { type: Date, default: Date.now },
+    testerName: { type: String, required: true },
 
-   // testerName: { type: String, required: true },
-   testerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-},
-
-testerName: {
-    type: String,
-    required: true
-},
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
 
     phLevel: { type: Number, required: true },
     turbidity: { type: Number, required: true },
