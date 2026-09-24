@@ -2,6 +2,7 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import connectDB from "./configs/db.js";
+import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/authRoutes.js";
 import reportRoutes from "./routes/wellReportRoutes.js";
@@ -22,7 +23,9 @@ app.use(cors({
 
 // Middleware
 app.use(express.json());
-
+app.use(
+  cookieParser(process.env.COOKIE_SECRET)
+);
 // Routes
 app.use("/api/wells", wellsRoutes);
 app.use("/api/reports", reportRoutes);

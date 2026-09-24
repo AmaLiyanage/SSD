@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Well from "../models/Well.js";
 
 
@@ -75,8 +76,13 @@ export const createWell = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    console.error("Get well error:", error);
+
+    res.status(500).json({
+        success: false,
+        message: "Internal server error"
+    });
+}
 };
 
 
@@ -102,10 +108,14 @@ export const getAllWells = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Get all wells error:", error);
+
+    res.status(500).json({
+        success: false,
+        message: "Internal server error"
+    });
   }
 };
-
 
 
 
@@ -113,10 +123,25 @@ export const getAllWells = async (req, res) => {
 
 export const getWellById = async (req, res) => {
   try {
-    const well = await Well.findById(req.params.id);
+
+    // Validate MongoDB ObjectId before querying the database
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid well ID",
+      });
+    }
+
+    const well = await Well.findOne({
+      _id: req.params.id,
+      isArchived: false,
+    });
 
     if (!well) {
-      return res.status(404).json({ message: "Well not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Well not found",
+      });
     }
 
     res.status(200).json({
@@ -125,7 +150,12 @@ export const getWellById = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Get well error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 
@@ -171,25 +201,34 @@ export const updateWell = async (req, res) => {
     const updateData = {};
 
     if (name) updateData.name = name.trim();
+
     if (village) updateData.village = village.trim();
+
     if (depth) {
       if (depth <= 0) {
         return res.status(400).json({
           message: "Depth must be greater than 0",
         });
       }
+
       updateData.depth = depth;
     }
+
     if (type) updateData.type = type;
 
     const well = await Well.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { returnDocument: "after" }
+      {
+        returnDocument: "after",
+        runValidators: true,
+      }
     );
 
     if (!well) {
-      return res.status(404).json({ message: "Well not found" });
+      return res.status(404).json({
+        message: "Well not found",
+      });
     }
 
     res.status(200).json({
@@ -199,10 +238,22 @@ export const updateWell = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Update well error:", error);
+
+    // Handle Mongoose validation errors
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid well data",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
-
 
 
 
