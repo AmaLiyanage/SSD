@@ -33,4 +33,18 @@ const upload = multer({
   fileFilter,
 });
 
+// Safe upload error handler
+export const handleUploadError = (err, req, res, next) => {
+  if (
+    err instanceof multer.MulterError ||
+    err?.message === "Only JPG and PNG files are allowed"
+  ) {
+    return res.status(400).json({
+      message: "Invalid image file. Only JPG and PNG files are allowed.",
+    });
+  }
+
+  next(err);
+};
+
 export default upload;
