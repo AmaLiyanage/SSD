@@ -17,6 +17,26 @@ const waterQualityDTO = (test) => ({
     remarks: test.remarks
 });
 
+//central place to handle unexpected errors.
+const handleServerError = (res, error, context) => {
+    console.error(`${context}:`, error);
+
+    if (error.name === 'ValidationError') {
+        return res.status(400).json({
+            message: 'Invalid lab report data'
+        });
+    }
+
+    if (error.name === 'CastError') {
+        return res.status(400).json({
+            message: 'Invalid request data'
+        });
+    }
+
+    return res.status(500).json({
+        message: 'An unexpected server error occurred'
+    });
+};
 
 const validatePayload = (payload, isPartial = false) => {
     const errors = [];
@@ -135,12 +155,20 @@ export const addTestResult = async (req, res) => {
         //res.status(201).json(populatedTest);
         res.status(201).json(waterQualityDTO(populatedTest));
 
+    // } catch (err) {
+    //     res.status(400).json({
+    //         message: "Validation Error",
+    //         error: err.message
+    //     });
+    // }
     } catch (err) {
-        res.status(400).json({
-            message: "Validation Error",
-            error: err.message
-        });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Add water quality error'
+    ); // fixes an existing problem
+}
+
 };
 
 // 2. Get All Test Results
@@ -164,12 +192,20 @@ export const getAllTests = async (req, res) => {
         const safeTests = tests.map(waterQualityDTO);
 
         res.status(200).json(safeTests);
+    // } catch (err) {
+    //     res.status(500).json({
+    //         message: "Fetch Error",
+    //         error: err.message
+    //     });
+    // }
     } catch (err) {
-        res.status(500).json({
-            message: "Fetch Error",
-            error: err.message
-        });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Get all water quality records error'
+    );
+}
+
 };
 //Now the API doesn't automatically expose every field in the Mongoose document.
 
@@ -190,9 +226,17 @@ export const getTestById = async (req, res) => {
 
        // res.status(200).json(test);
        res.status(200).json(waterQualityDTO(test));
+    // } catch (err) {
+    //     res.status(500).json({ message: "Fetch Error", error: err.message });
+    // }
     } catch (err) {
-        res.status(500).json({ message: "Fetch Error", error: err.message });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Get water quality record error'
+    );
+}
+
 };
 
 // 4. Get History for a Specific Well
@@ -212,9 +256,17 @@ export const getWellHistory = async (req, res) => {
         res.status(200).json(safeHistory);
 
 
+    // } catch (err) {
+    //     res.status(500).json({ message: "Fetch Error", error: err.message });
+    // }
     } catch (err) {
-        res.status(500).json({ message: "Fetch Error", error: err.message });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Get well water quality history error'
+    );
+}
+
 };
 
 // 5. Update a Test Result
@@ -315,12 +367,21 @@ export const updateTestResult = async (req, res) => {
         //res.status(200).json(updated);
         res.status(200).json(waterQualityDTO(updated));
 
+    // } catch (err) {
+    //     res.status(400).json({
+    //         message: "Update Error",
+    //         error: err.message
+    //     });
+    // }
+
     } catch (err) {
-        res.status(400).json({
-            message: "Update Error",
-            error: err.message
-        });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Update water quality error'
+    );
+}
+
 };
 
 // export const deleteTestResult = async (req, res) => {
@@ -374,10 +435,19 @@ export const deleteTestResult = async (req, res) => {
             message: "Record deleted successfully"
         });
 
+    // } catch (err) {
+    //     res.status(500).json({
+    //         message: "Delete failed",
+    //         error: err.message
+    //     });
+    // }
+
     } catch (err) {
-        res.status(500).json({
-            message: "Delete failed",
-            error: err.message
-        });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Delete water quality error'
+    );
+}
+
 };
