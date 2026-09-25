@@ -22,6 +22,7 @@ export const signup = async (req, res) => {
       token: generateToken(user._id),
     });
   } catch (err) {
+    
     res.status(500).json({ message: err.message });
   }
 };
