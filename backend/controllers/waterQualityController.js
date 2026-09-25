@@ -2,6 +2,22 @@
 import WaterQuality from '../models/WaterQuality.js';
 import mongoose from 'mongoose';
 
+
+const waterQualityDTO = (test) => ({
+    id: test._id,
+    wellId: test.wellId,
+    testDate: test.testDate,
+    testerName: test.testerName,
+    phLevel: test.phLevel,
+    turbidity: test.turbidity,
+    bacteriaCount: test.bacteriaCount,
+    temperature: test.temperature,
+    labReportUrl: test.labReportUrl,
+    status: test.status,
+    remarks: test.remarks
+});
+
+
 const validatePayload = (payload, isPartial = false) => {
     const errors = [];
 
@@ -116,7 +132,8 @@ export const addTestResult = async (req, res) => {
                 'wellId name village location type depth'
             );
 
-        res.status(201).json(populatedTest);
+        //res.status(201).json(populatedTest);
+        res.status(201).json(waterQualityDTO(populatedTest));
 
     } catch (err) {
         res.status(400).json({
@@ -127,16 +144,36 @@ export const addTestResult = async (req, res) => {
 };
 
 // 2. Get All Test Results
+// export const getAllTests = async (req, res) => {
+//     try {
+//         const tests = await WaterQuality.find()
+//             .populate('wellId', 'wellId name village location type depth')
+//             .sort({ testDate: -1, createdAt: -1 });
+//         res.status(200).json(tests);
+//     } catch (err) {
+//         res.status(500).json({ message: "Fetch Error", error: err.message });
+//     }
+// };
+
 export const getAllTests = async (req, res) => {
     try {
         const tests = await WaterQuality.find()
             .populate('wellId', 'wellId name village location type depth')
             .sort({ testDate: -1, createdAt: -1 });
-        res.status(200).json(tests);
+
+        const safeTests = tests.map(waterQualityDTO);
+
+        res.status(200).json(safeTests);
     } catch (err) {
-        res.status(500).json({ message: "Fetch Error", error: err.message });
+        res.status(500).json({
+            message: "Fetch Error",
+            error: err.message
+        });
     }
 };
+//Now the API doesn't automatically expose every field in the Mongoose document.
+
+
 
 // 3. Get a Single Test by ID
 export const getTestById = async (req, res) => {
@@ -151,7 +188,8 @@ export const getTestById = async (req, res) => {
             return res.status(404).json({ message: "Test not found" });
         }
 
-        res.status(200).json(test);
+       // res.status(200).json(test);
+       res.status(200).json(waterQualityDTO(test));
     } catch (err) {
         res.status(500).json({ message: "Fetch Error", error: err.message });
     }
@@ -167,7 +205,13 @@ export const getWellHistory = async (req, res) => {
         const history = await WaterQuality.find({ wellId: req.params.wellId })
             .populate('wellId', 'wellId name village location type depth')
             .sort({ testDate: -1, createdAt: -1 });
-        res.status(200).json(history);
+        
+        //    res.status(200).json(history);
+        const safeHistory = history.map(waterQualityDTO);
+
+        res.status(200).json(safeHistory);
+
+
     } catch (err) {
         res.status(500).json({ message: "Fetch Error", error: err.message });
     }
@@ -268,7 +312,8 @@ export const updateTestResult = async (req, res) => {
             'wellId name village location type depth'
         );
 
-        res.status(200).json(updated);
+        //res.status(200).json(updated);
+        res.status(200).json(waterQualityDTO(updated));
 
     } catch (err) {
         res.status(400).json({
