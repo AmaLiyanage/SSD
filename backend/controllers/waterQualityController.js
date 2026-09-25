@@ -84,7 +84,6 @@ export const addTestResult = async (req, res) => {
         createdBy: req.user._id
     });
 
-
         const savedTest = await newTest.save();
         const populatedTest = await WaterQuality.findById(savedTest._id)
             .populate('wellId', 'wellId name village location type depth');
@@ -207,7 +206,6 @@ export const updateTestResult = async (req, res) => {
 //     }
 
 // };
-
 
 export const deleteTestResult = async (req, res) => {
     try {
