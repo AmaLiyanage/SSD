@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
 const UpdateWellReport = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  
 
   const [formData, setFormData] = useState({
     waterLevel: "",
@@ -16,16 +19,14 @@ const UpdateWellReport = () => {
   const [photo, setPhoto] = useState(null);
   const [preview, setPreview] = useState("");
   const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
   const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState("");
 
   // Custom UI States
   const [notification, setNotification] = useState({ show: false, message: "", type: "" });
   const [confirmModal, setConfirmModal] = useState({ show: false, id: null, type: "" });
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState("");
-
-  const token = localStorage.getItem("token");
 
   // Auto-hide notifications after 3 seconds
   useEffect(() => {
@@ -39,9 +40,7 @@ const UpdateWellReport = () => {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/reports/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get(`/reports/${id}`);
         const { waterLevel, pumpStatus, severity, description, photos, comments } = res.data;
         setFormData({ waterLevel, pumpStatus, severity, description });
         setComments(comments || []);
@@ -53,7 +52,7 @@ const UpdateWellReport = () => {
       }
     };
     fetchReport();
-  }, [id, token]);
+  }, [id]);
 
   const showStatus = (msg, type = "success") => {
     setNotification({ show: true, message: msg, type });
@@ -63,16 +62,12 @@ const UpdateWellReport = () => {
   const handleConfirmAction = async () => {
     try {
       if (confirmModal.type === "comment") {
-        await axios.delete(`http://localhost:5000/api/reports/${id}/comments/${confirmModal.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.delete(`/reports/${id}/comments/${confirmModal.id}`);
         setComments(comments.filter((c) => c._id !== confirmModal.id));
         showStatus("Comment removed permanently");
       } 
       else if (confirmModal.type === "report") {
-        await axios.delete(`http://localhost:5000/api/reports/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.delete(`/reports/${id}`);
         showStatus("Report deleted successfully!");
         setTimeout(() => navigate("/reports"), 1500);
       }
@@ -89,11 +84,7 @@ const UpdateWellReport = () => {
       return;
     }
     try {
-      await axios.put(
-        `http://localhost:5000/api/reports/${id}/comments/${commentId}`,
-        { message: editCommentText },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put(`/reports/${id}/comments/${commentId}`, { message: editCommentText });
       setComments(comments.map(c => c._id === commentId ? { ...c, message: editCommentText } : c));
       setEditingCommentId(null);
       showStatus("Comment updated successfully!");
@@ -118,8 +109,8 @@ const UpdateWellReport = () => {
     if (photo) data.append("photo", photo);
 
     try {
-      await axios.put(`http://localhost:5000/api/reports/${id}`, data, {
-        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
+      await api.put(`/reports/${id}`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       showStatus("Report updated successfully!");
       setTimeout(() => navigate(`/reports/${id}`), 1500);
@@ -174,14 +165,17 @@ const UpdateWellReport = () => {
               <p className="text-slate-400 text-[10px] mt-2 font-mono tracking-widest uppercase italic font-bold">Record ID: {id.slice(-8).toUpperCase()}</p>
             </div>
             {/* DELETE REPORT BUTTON */}
-            <button 
-              type="button" 
-              onClick={() => setConfirmModal({ show: true, id: id, type: "report" })}
-              className="p-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all border border-red-500/20 shadow-sm"
-              title="Delete Entire Report"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-            </button>
+            {user?.role === "field_officer" && (
+              <button 
+                type="button" 
+
+                onClick={() => setConfirmModal({ show: true, id: id, type: "report" })}
+                className="p-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all border border-red-500/20 shadow-sm"
+                title="Delete Entire Report"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 01 1 1v3M4 7h16" /></svg>
+              </button>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 space-y-6">

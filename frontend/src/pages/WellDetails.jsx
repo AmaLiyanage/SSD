@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
 import { useAuth } from "../context/AuthContext";
+import api from "../api/axios";
 
 const mapContainerStyle = { width: "100%", height: "300px", borderRadius: "1rem" };
 
@@ -60,17 +60,14 @@ const WellDetails = () => {
     const fetchAllData = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${token}` };
-
         // 1. Well Details
-        const wellRes = await axios.get(`http://localhost:5000/api/wells/id/${id}`, { headers });
+        const wellRes = await api.get(`/wells/id/${id}`);
         setWell(wellRes.data.data);
 
         // 2. Lab Reports
         if (isAdmin || isLabTester || isCustomer) {
           try { 
-            const labRes = await axios.get(`http://localhost:5000/api/water-quality/well/${id}`, { headers }); 
+            const labRes = await api.get(`/water-quality/well/${id}`); 
             setLabReports(labRes.data.data || labRes.data || []); 
           } catch (e) { console.log("Lab reports error", e); }
         }
@@ -78,14 +75,18 @@ const WellDetails = () => {
         // 3. Maintenance & Field Reports
         if (isAdmin || isFieldOfficer || isCustomer) {
           try { 
-            const mainRes = await axios.get(`http://localhost:5000/api/maintenance/well/${id}`, { headers }); 
-            setMaintenanceReports(mainRes.data.data || mainRes.data || []); 
+            const mainRes = await api.get("/maintenance");
+            const maintenance = Array.isArray(mainRes.data) ? mainRes.data : mainRes.data?.data || [];
+            setMaintenanceReports(maintenance.filter((request) => {
+              const requestWellId = request.wellId?._id || request.wellId;
+              return String(requestWellId) === String(id);
+            }));
           } catch (e) { console.log("Maintenance reports error"); }
           
           try { 
   // IMPORTANT: Verify if your backend expects the MongoDB _id or the String WellId
   // If your route uses Report.find({ wellId: req.params.wellId }), make sure you are sending well.wellId
-  const fieldRes = await axios.get(`http://localhost:5000/api/reports/well/${id}`, { headers }); 
+  const fieldRes = await api.get(`/reports/well/${id}`); 
   
   console.log("Full API Response:", fieldRes); // Debugging line
 
@@ -115,9 +116,8 @@ const WellDetails = () => {
   const handleStatusChange = async (newStatus) => {
     if (!window.confirm(`Change status to ${newStatus}?`)) return;
     try {
-      const token = localStorage.getItem("token");
-      await axios.patch(`http://localhost:5000/api/wells/${id}/status`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } });
-      setWell(prev => ({ ...prev, status: newStatus }));
+      const response = await api.patch(`/wells/${id}/status`, { status: newStatus });
+      setWell(response.data.data);
     } catch (err) {
       alert("Failed to update status");
     }

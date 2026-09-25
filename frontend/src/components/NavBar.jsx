@@ -73,10 +73,16 @@ const NavBar = () => {
                       <NavLink to="/maintenance" className={linkClass}>Maintenance</NavLink>
                     </>
                   )}
-                  {["customer", "communityUser"].includes(user.role) && (
+                  {user.role === "customer" && (
                     <>
                       <NavLink to="/home" className={linkClass}>Home</NavLink>
                       <NavLink to="/wells" className={linkClass}>Public Wells</NavLink>
+                      <NavLink to="/maintenance" className={linkClass}>Maintenance</NavLink>
+                    </>
+                  )}
+                  {user.role === "communityUser" && (
+                    <>
+                      <NavLink to="/home" className={linkClass}>Home</NavLink>
                       <NavLink to="/maintenance" className={linkClass}>Maintenance</NavLink>
                     </>
                   )}

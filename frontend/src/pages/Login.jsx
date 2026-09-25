@@ -27,7 +27,7 @@ const Login = () => {
       if (res.data.role === "admin") {
         navigate("/admin");
       } else if (res.data.role === "field_officer") {
-        navigate("/field-dashboard");
+        navigate("/officer-dashboard");
       } else if (res.data.role === "lab_tester") {
         navigate("/lab-dashboard");
       } else if (res.data.role === "customer" || res.data.role === "communityUser") {
