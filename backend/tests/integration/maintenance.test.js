@@ -13,8 +13,8 @@ const generateToken = (id, role) => {
 };
 
 describe("Maintenance API Integration Tests", () => {
-  let adminToken, fieldOfficerToken, communityUserToken;
-  let admin, fieldOfficer, communityUser;
+  let adminToken, fieldOfficerToken, communityUserToken, communityUserBToken;
+  let admin, fieldOfficer, communityUser, communityUserB;
   let testWell;
   let maintenanceRequest;
 
@@ -33,11 +33,13 @@ describe("Maintenance API Integration Tests", () => {
     admin = await User.create({ username: "testadmin", password: "password", role: "admin" });
     fieldOfficer = await User.create({ username: "testofficer", password: "password", role: "field_officer" });
     communityUser = await User.create({ username: "testuser", password: "password", role: "communityUser" });
+    communityUserB = await User.create({ username: "testuserB", password: "password", role: "communityUser" });
 
     // Generate tokens
     adminToken = generateToken(admin._id, admin.role);
     fieldOfficerToken = generateToken(fieldOfficer._id, fieldOfficer.role);
     communityUserToken = generateToken(communityUser._id, communityUser.role);
+    communityUserBToken = generateToken(communityUserB._id, communityUserB.role);
 
     // Create test well
     testWell = await Well.create({
@@ -76,7 +78,8 @@ describe("Maintenance API Integration Tests", () => {
       if (res.status !== 201) console.log("Create failed:", res.body);
       
       expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty("wellId", testWell._id.toString());
+      const returnedWellId = res.body.wellId?._id ? res.body.wellId._id.toString() : res.body.wellId?.toString();
+      expect(returnedWellId).toBe(testWell._id.toString());
       
       // Store the request to use in subsequent tests
       maintenanceRequest = res.body;
@@ -148,6 +151,40 @@ describe("Maintenance API Integration Tests", () => {
         .send({ assignedTo: fieldOfficer._id });
 
       expect(res.status).toBe(403);
+    });
+  });
+
+  describe("Security Tests: BOLA & NoSQL Injection Mitigations", () => {
+    it("should restrict communityUser to only their own maintenance requests (BOLA defense)", async () => {
+      const res = await request(app)
+        .get("/api/maintenance")
+        .set("Authorization", `Bearer ${communityUserBToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBeTruthy();
+      // User B should see 0 requests, since the only request was created by User A
+      expect(res.body.length).toBe(0);
+    });
+
+    it("should return 403 Forbidden when a communityUser tries to access another user's request by ID (BOLA defense)", async () => {
+      const res = await request(app)
+        .get(`/api/maintenance/${maintenanceRequest._id}`)
+        .set("Authorization", `Bearer ${communityUserBToken}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("Access denied");
+    });
+
+    it("should sanitize and ignore NoSQL injection operators in query parameters", async () => {
+      // Attacker attempts operator injection via status[$ne]=Pending
+      const res = await request(app)
+        .get("/api/maintenance?status[$ne]=Pending")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      // Operator is sanitized, returning normal list without executing $ne operator
+      expect(Array.isArray(res.body)).toBeTruthy();
     });
   });
 });

@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./layouts/MainLayout";
-
+import GoogleCallback from "./pages/GoogleCallback";
 // --- Lazy Load Pages for Better Performance ---
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
@@ -50,6 +50,10 @@ function AppRoutes() {
         {/* Public Routes */}
         <Route path="/home" element={<HomePage />} />
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+        <Route
+    path="/google-callback"
+    element={<GoogleCallback />}
+  />
         <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" />} />
 
         {/* --- Protected Routes --- */}

@@ -59,23 +59,39 @@ const UpdateWellReport = () => {
   };
 
   // --- CONSOLIDATED DELETE LOGIC (REPORT & COMMENTS) ---
-  const handleConfirmAction = async () => {
-    try {
-      if (confirmModal.type === "comment") {
-        await api.delete(`/reports/${id}/comments/${confirmModal.id}`);
-        setComments(comments.filter((c) => c._id !== confirmModal.id));
-        showStatus("Comment removed permanently");
-      } 
-      else if (confirmModal.type === "report") {
-        await api.delete(`/reports/${id}`);
-        showStatus("Report deleted successfully!");
-        setTimeout(() => navigate("/reports"), 1500);
-      }
+const handleConfirmAction = async () => {
+  try {
+    if (confirmModal.type === "comment") {
+      await axios.delete(`http://localhost:5000/api/reports/${id}/comments/${confirmModal.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setComments(comments.filter((c) => c._id !== confirmModal.id));
       setConfirmModal({ show: false, id: null, type: "" });
-    } catch (err) {
-      showStatus(`Error deleting ${confirmModal.type}`, "error");
+      showStatus("Comment removed permanently");
+    } 
+    else if (confirmModal.type === "report") {
+      await axios.delete(`http://localhost:5000/api/reports/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setConfirmModal({ show: false, id: null, type: "" });
+      showStatus("Report deleted successfully!");
+
+      setTimeout(() => navigate("/reports"), 1500);
     }
-  };
+  } catch (err) {
+    // Close the confirmation popup first
+    setConfirmModal({ show: false, id: null, type: "" });
+
+    // Display the backend error message
+    const message =
+      err.response?.data?.message ||
+      `Error deleting ${confirmModal.type}`;
+
+    showStatus(message, "error");
+  }
+};
 
   // --- COMMENT ACTIONS ---
   const handleUpdateComment = async (commentId) => {
