@@ -47,13 +47,8 @@ const MaintenanceList = () => {
       
       const rawData = Array.isArray(response.data) ? response.data : [];
 
-      // If user is customer/communityUser, show only their own requests
-      const data = (user?.role === "customer" || user?.role === "communityUser") 
-        ? rawData.filter(req => {
-            const creatorId = req.requestedBy?._id || req.requestedBy;
-            return creatorId === currentUserId;
-          })
-        : rawData;
+      // Server-side authorization securely restricts data for community users / customers
+      const data = rawData;
         
       // Deduplicate by _id to prevent duplicate display
       const uniqueMap = new Map();
