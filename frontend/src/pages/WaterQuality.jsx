@@ -55,6 +55,18 @@ const WaterQuality = () => {
     }
   };
 
+  const isOwnTest = (item) => {
+    if (user?.role !== "lab_tester") return false;
+
+    const createdBy = item.createdBy?._id || item.createdBy;
+    const matchesUserId = createdBy && user?._id && String(createdBy) === String(user._id);
+    const matchesTesterName = item.testerName?.trim().toLowerCase() === user?.username?.trim().toLowerCase();
+
+    return matchesUserId || matchesTesterName;
+  };
+
+  const canManageTest = (item) => user?.role === "admin" || isOwnTest(item);
+
   const filteredTests = useMemo(() => {
     return tests.filter((item) => {
       const matchesStatus = statusFilter === "all" || item.status === statusFilter;
@@ -207,12 +219,26 @@ const WaterQuality = () => {
                   const formattedDate = new Date(item.testDate || item.createdAt).toLocaleDateString();
 
                   return (
-                    <tr key={item._id} className="group hover:bg-slate-50/50 transition-all duration-200">
+                    <tr
+                      key={item._id}
+                      className={`group transition-all duration-200 ${
+                        isOwnTest(item)
+                          ? "bg-blue-50/70 border-l-4 border-blue-500 hover:bg-blue-100/70"
+                          : "hover:bg-slate-50/50"
+                      }`}
+                    >
                       <td className="p-5 font-black text-slate-900 tracking-tighter text-sm">
                         {wellId}{wellName}
                         <span className="block text-[10px] font-normal text-slate-400">{village}</span>
                       </td>
-                      <td className="p-5 text-slate-600 text-xs font-semibold">{item.testerName || "N/A"}</td>
+                      <td className="p-5 text-slate-600 text-xs font-semibold">
+                        <span>{item.testerName || "N/A"}</span>
+                        {isOwnTest(item) && (
+                          <span className="ml-2 inline-flex rounded-full bg-blue-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                            My Report
+                          </span>
+                        )}
+                      </td>
                       <td className="p-5 text-xs font-mono font-bold">{item.phLevel}</td>
                       <td className="p-5 text-xs font-mono text-slate-600">{item.turbidity} NTU</td>
                       <td className="p-5 text-xs font-mono">
@@ -234,19 +260,23 @@ const WaterQuality = () => {
                         >
                           Inspect
                         </Link>
-                        <Link
-                          to={`/water-quality/edit/${item._id}`}
-                          className="inline-block px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-[9px] font-black uppercase tracking-tighter hover:bg-amber-100 hover:text-amber-800 transition-all"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(item._id)}
-                          className="inline-block px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-tighter hover:bg-red-600 hover:text-white transition-all"
-                        >
-                          Delete
-                        </button>
+                        {canManageTest(item) && (
+                          <>
+                            <Link
+                              to={`/water-quality/edit/${item._id}`}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-[9px] font-black uppercase tracking-tighter hover:bg-amber-100 hover:text-amber-800 transition-all"
+                            >
+                              <Edit3 className="h-3 w-3" /> Edit
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(item._id)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-tighter hover:bg-red-600 hover:text-white transition-all"
+                            >
+                              <Trash2 className="h-3 w-3" /> Delete
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   );

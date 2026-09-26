@@ -3,7 +3,7 @@ import { getAllTests } from "../services/waterService";
 import WaterChart from "../components/WaterChart";
 import PredictionBadge from "../components/PredictionBadge";
 import LabTestDetailsModal from "../components/LabTestDetailsModal";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { 
   LayoutDashboard, 
@@ -18,8 +18,6 @@ import {
 
 const LabTesterDashboard = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("abnormal"); // "abnormal" | "all"
@@ -29,7 +27,7 @@ const LabTesterDashboard = () => {
     try {
       setLoading(true);
       const res = await getAllTests();
-      setTests(Array.isArray(res.data) ? res.data : res.data?.data || []);
+      setTests(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Dashboard Fetch Error:", err);
     } finally {
@@ -193,8 +191,8 @@ const LabTesterDashboard = () => {
           </div>
         </section>
 
-        {/* Main Content: Clean Data Table + Sidebar Analytics */}
-        <section className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+        {/* Main Content: Monitoring table followed by analytics */}
+        <section className="space-y-8">
           {/* Data Table Container - Styled like FieldOfficerDashboard main table */}
           <main className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/40">
@@ -310,8 +308,8 @@ const LabTesterDashboard = () => {
             </div>
           </main>
 
-          {/* Right Column: Re-test Watchlist & Trend Chart */}
-          <div className="space-y-6">
+          {/* Analytics below the monitoring table */}
+          <div className="grid gap-8 lg:grid-cols-2">
             {/* Wells Needing Re-test */}
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
               <div className="flex items-center gap-2 mb-4">

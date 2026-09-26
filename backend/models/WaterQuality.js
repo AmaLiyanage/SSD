@@ -5,10 +5,44 @@ const WaterQualitySchema = new mongoose.Schema({
     wellId: { type: mongoose.Schema.Types.ObjectId, ref: 'Well', required: true },
     testDate: { type: Date, default: Date.now },
     testerName: { type: String, required: true },
-    phLevel: { type: Number, required: true },
-    turbidity: { type: Number, required: true },
-    bacteriaCount: { type: Number, required: true },
-    temperature: { type: Number, required: true }, 
+
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+
+    // phLevel: { type: Number, required: true },
+    // turbidity: { type: Number, required: true },
+    // bacteriaCount: { type: Number, required: true },
+    // temperature: { type: Number, required: true },
+    
+        phLevel: {
+        type: Number,
+        required: true,
+        min: 0,
+        max: 14
+    },
+
+    turbidity: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+
+    bacteriaCount: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+
+    temperature: {
+        type: Number,
+        required: true,
+        min: -20,
+        max: 100
+    },
+
     labReportUrl: { type: String }, // For the field officer reports
     status: { type: String, enum: ['Safe', 'Warning', 'Unsafe'], default: 'Safe' },
     remarks: { type: String }

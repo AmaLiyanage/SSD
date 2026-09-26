@@ -1,5 +1,42 @@
+
 import WaterQuality from '../models/WaterQuality.js';
 import mongoose from 'mongoose';
+
+
+const waterQualityDTO = (test) => ({
+    id: test._id,
+    wellId: test.wellId,
+    testDate: test.testDate,
+    testerName: test.testerName,
+    phLevel: test.phLevel,
+    turbidity: test.turbidity,
+    bacteriaCount: test.bacteriaCount,
+    temperature: test.temperature,
+    labReportUrl: test.labReportUrl,
+    status: test.status,
+    remarks: test.remarks
+});
+
+//central place to handle unexpected errors.
+const handleServerError = (res, error, context) => {
+    console.error(`${context}:`, error);
+
+    if (error.name === 'ValidationError') {
+        return res.status(400).json({
+            message: 'Invalid lab report data'
+        });
+    }
+
+    if (error.name === 'CastError') {
+        return res.status(400).json({
+            message: 'Invalid request data'
+        });
+    }
+
+    return res.status(500).json({
+        message: 'An unexpected server error occurred'
+    });
+};
 
 const validatePayload = (payload, isPartial = false) => {
     const errors = [];
@@ -64,11 +101,26 @@ const computeTestStatus = ({ phLevel, bacteriaCount, turbidity, temperature }) =
 export const addTestResult = async (req, res) => {
     try {
         const errors = validatePayload(req.body, false);
+
         if (errors.length) {
-            return res.status(400).json({ message: "Validation Error", errors });
+            return res.status(400).json({
+                message: "Validation Error",
+                errors
+            });
         }
 
-        const { phLevel, bacteriaCount, turbidity, temperature } = req.body;
+        const {
+            wellId,
+            testerName,
+            testDate,
+            phLevel,
+            turbidity,
+            bacteriaCount,
+            temperature,
+            labReportUrl,
+            remarks
+        } = req.body;
+
         const status = computeTestStatus({
             phLevel: Number(phLevel),
             bacteriaCount: Number(bacteriaCount),
@@ -76,28 +128,88 @@ export const addTestResult = async (req, res) => {
             temperature: Number(temperature)
         });
 
-        const newTest = new WaterQuality({ ...req.body, status });
-        const savedTest = await newTest.save();
-        const populatedTest = await WaterQuality.findById(savedTest._id)
-            .populate('wellId', 'wellId name village location type depth');
+        const newTest = new WaterQuality({
+            wellId,
+            testerName,
+            testDate,
+            phLevel,
+            turbidity,
+            bacteriaCount,
+            temperature,
+            labReportUrl,
+            remarks,
 
-        res.status(201).json(populatedTest);
+            // Server-controlled fields
+            status,
+            createdBy: req.user._id
+        });
+
+        const savedTest = await newTest.save();
+
+        const populatedTest = await WaterQuality.findById(savedTest._id)
+            .populate(
+                'wellId',
+                'wellId name village location type depth'
+            );
+
+        //res.status(201).json(populatedTest);
+        res.status(201).json(waterQualityDTO(populatedTest));
+
+    // } catch (err) {
+    //     res.status(400).json({
+    //         message: "Validation Error",
+    //         error: err.message
+    //     });
+    // }
     } catch (err) {
-        res.status(400).json({ message: "Validation Error", error: err.message });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Add water quality error'
+    ); // fixes an existing problem
+}
+
 };
 
 // 2. Get All Test Results
+// export const getAllTests = async (req, res) => {
+//     try {
+//         const tests = await WaterQuality.find()
+//             .populate('wellId', 'wellId name village location type depth')
+//             .sort({ testDate: -1, createdAt: -1 });
+//         res.status(200).json(tests);
+//     } catch (err) {
+//         res.status(500).json({ message: "Fetch Error", error: err.message });
+//     }
+// };
+
 export const getAllTests = async (req, res) => {
     try {
         const tests = await WaterQuality.find()
             .populate('wellId', 'wellId name village location type depth')
             .sort({ testDate: -1, createdAt: -1 });
-        res.status(200).json(tests);
+
+        const safeTests = tests.map(waterQualityDTO);
+
+        res.status(200).json(safeTests);
+    // } catch (err) {
+    //     res.status(500).json({
+    //         message: "Fetch Error",
+    //         error: err.message
+    //     });
+    // }
     } catch (err) {
-        res.status(500).json({ message: "Fetch Error", error: err.message });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Get all water quality records error'
+    );
+}
+
 };
+//Now the API doesn't automatically expose every field in the Mongoose document.
+
+
 
 // 3. Get a Single Test by ID
 export const getTestById = async (req, res) => {
@@ -112,10 +224,19 @@ export const getTestById = async (req, res) => {
             return res.status(404).json({ message: "Test not found" });
         }
 
-        res.status(200).json(test);
+       // res.status(200).json(test);
+       res.status(200).json(waterQualityDTO(test));
+    // } catch (err) {
+    //     res.status(500).json({ message: "Fetch Error", error: err.message });
+    // }
     } catch (err) {
-        res.status(500).json({ message: "Fetch Error", error: err.message });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Get water quality record error'
+    );
+}
+
 };
 
 // 4. Get History for a Specific Well
@@ -128,59 +249,205 @@ export const getWellHistory = async (req, res) => {
         const history = await WaterQuality.find({ wellId: req.params.wellId })
             .populate('wellId', 'wellId name village location type depth')
             .sort({ testDate: -1, createdAt: -1 });
-        res.status(200).json(history);
+        
+        //    res.status(200).json(history);
+        const safeHistory = history.map(waterQualityDTO);
+
+        res.status(200).json(safeHistory);
+
+
+    // } catch (err) {
+    //     res.status(500).json({ message: "Fetch Error", error: err.message });
+    // }
     } catch (err) {
-        res.status(500).json({ message: "Fetch Error", error: err.message });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Get well water quality history error'
+    );
+}
+
 };
 
 // 5. Update a Test Result
 export const updateTestResult = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ message: "Validation Error", error: "Invalid id" });
+            return res.status(400).json({
+                message: "Validation Error",
+                error: "Invalid id"
+            });
         }
 
         const errors = validatePayload(req.body, true);
+
         if (errors.length) {
-            return res.status(400).json({ message: "Validation Error", errors });
+            return res.status(400).json({
+                message: "Validation Error",
+                errors
+            });
         }
 
+        // Find the report
         const existingTest = await WaterQuality.findById(req.params.id);
+
         if (!existingTest) {
-            return res.status(404).json({ message: "Record not found" });
+            return res.status(404).json({
+                message: "Record not found"
+            });
         }
 
-        const mergedData = {
-            ...existingTest.toObject(),
-            ...req.body,
+        // Object-level authorization
+        // Admin can modify any report.
+        // Lab tester can modify only their own report.
+        if (
+            req.user.role !== 'admin' &&
+            existingTest.createdBy.toString() !== req.user._id.toString()
+        ) {
+            return res.status(403).json({
+                message: "You are not authorized to modify this report"
+            });
+        }
+
+        // Allow-list: only these fields can be updated
+        const allowedFields = [
+            'wellId',
+            'testerName',
+            'testDate',
+            'phLevel',
+            'turbidity',
+            'bacteriaCount',
+            'temperature',
+            'labReportUrl',
+            'remarks'
+        ];
+
+        const updates = {};
+
+        for (const field of allowedFields) {
+            if (req.body[field] !== undefined) {
+                updates[field] = req.body[field];
+            }
+        }
+
+        // Calculate status on the server
+        const statusData = {
+            phLevel: updates.phLevel !== undefined
+                ? Number(updates.phLevel)
+                : existingTest.phLevel,
+
+            bacteriaCount: updates.bacteriaCount !== undefined
+                ? Number(updates.bacteriaCount)
+                : existingTest.bacteriaCount,
+
+            turbidity: updates.turbidity !== undefined
+                ? Number(updates.turbidity)
+                : existingTest.turbidity,
+
+            temperature: updates.temperature !== undefined
+                ? Number(updates.temperature)
+                : existingTest.temperature
         };
-        mergedData.status = computeTestStatus(mergedData);
 
-        const updated = await WaterQuality.findByIdAndUpdate(req.params.id, mergedData, {
-            new: true,
-            runValidators: true
-        }).populate('wellId', 'wellId name village location type depth');
+        updates.status = computeTestStatus(statusData);
 
-        res.status(200).json(updated);
+        // Update only allow-listed fields
+        const updated = await WaterQuality.findByIdAndUpdate(
+            req.params.id,
+            updates,
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate(
+            'wellId',
+            'wellId name village location type depth'
+        );
+
+        //res.status(200).json(updated);
+        res.status(200).json(waterQualityDTO(updated));
+
+    // } catch (err) {
+    //     res.status(400).json({
+    //         message: "Update Error",
+    //         error: err.message
+    //     });
+    // }
+
     } catch (err) {
-        res.status(400).json({ message: "Update Error", error: err.message });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Update water quality error'
+    );
+}
+
 };
+
+// export const deleteTestResult = async (req, res) => {
+//     try {
+//         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+//             return res.status(400).json({ message: "Validation Error", error: "Invalid id" });
+//         }
+
+//         const deleted = await WaterQuality.findByIdAndDelete(req.params.id);
+//         if (!deleted) {
+//             return res.status(404).json({ message: "Record not found" });
+//         }
+//         res.status(200).json({ message: "Record deleted successfully" });
+//     } catch (err) {
+//         res.status(500).json({ message: "Delete failed", error: err.message });
+//     }
+
+// };
 
 export const deleteTestResult = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ message: "Validation Error", error: "Invalid id" });
+            return res.status(400).json({
+                message: "Validation Error",
+                error: "Invalid id"
+            });
         }
 
-        const deleted = await WaterQuality.findByIdAndDelete(req.params.id);
-        if (!deleted) {
-            return res.status(404).json({ message: "Record not found" });
+        const existingTest = await WaterQuality.findById(req.params.id);
+
+        if (!existingTest) {
+            return res.status(404).json({
+                message: "Record not found"
+            });
         }
-        res.status(200).json({ message: "Record deleted successfully" });
+
+        // Admin can delete any report.
+        // Lab tester can delete only their own report.
+        if (
+            req.user.role !== 'admin' &&
+            existingTest.createdBy.toString() !== req.user._id.toString()
+        ) {
+            return res.status(403).json({
+                message: "You are not authorized to delete this report"
+            });
+        }
+
+        await WaterQuality.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({
+            message: "Record deleted successfully"
+        });
+
+    // } catch (err) {
+    //     res.status(500).json({
+    //         message: "Delete failed",
+    //         error: err.message
+    //     });
+    // }
+
     } catch (err) {
-        res.status(500).json({ message: "Delete failed", error: err.message });
-    }
+    return handleServerError(
+        res,
+        err,
+        'Delete water quality error'
+    );
+}
 
 };

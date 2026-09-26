@@ -9,6 +9,11 @@ import {
 } from '../controllers/waterQualityController.js';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
 
+
+//import { protect } from '../middleware/authMiddleware.js'; 
+//project's middleware exports protect
+import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
+
 const router = express.Router();
 
 // Previously EVERY route below was public: an unauthenticated attacker could

@@ -66,7 +66,11 @@ function AppRoutes() {
         } />
         
         {/* Wells Management */}
-        <Route path="/wells" element={<WellsList />} />
+        <Route path="/wells" element={
+          <ProtectedRoute allowedRoles={["admin", "field_officer", "lab_tester", "customer"]}>
+            <WellsList />
+          </ProtectedRoute>
+        } />
         {/* ... remaining routes ... */}
         <Route path="/wells/add" element={
           <ProtectedRoute allowedRoles={["admin"]}>
@@ -138,7 +142,7 @@ function AppRoutes() {
           </ProtectedRoute>
         } />
         <Route path="/comments" element={
-          <ProtectedRoute allowedRoles={["admin", "field_officer", "customer", "communityUser"]}>
+          <ProtectedRoute allowedRoles={["admin", "field_officer"]}>
             <CommentsPage />
           </ProtectedRoute>
         } />
@@ -155,12 +159,12 @@ function AppRoutes() {
           </ProtectedRoute>
         } />
         <Route path="/water-quality" element={
-          <ProtectedRoute allowedRoles={["lab_tester"]}>
+          <ProtectedRoute allowedRoles={["lab_tester", "admin"]}>
             <WaterQuality />
           </ProtectedRoute>
         } />
         <Route path="/water-quality/add" element={
-          <ProtectedRoute allowedRoles={["lab_tester"]}>
+          <ProtectedRoute allowedRoles={["lab_tester", "admin"]}>
             <AddWaterTest />
           </ProtectedRoute>
         } />
@@ -170,7 +174,7 @@ function AppRoutes() {
           </ProtectedRoute>
         } />
         <Route path="/water-quality/edit/:id" element={
-          <ProtectedRoute allowedRoles={["lab_tester"]}>
+          <ProtectedRoute allowedRoles={["lab_tester", "admin"]}>
             <EditWaterTest />
           </ProtectedRoute>
         } />
