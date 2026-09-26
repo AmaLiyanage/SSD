@@ -8,7 +8,14 @@ export const createRequest = async (data) => {
 };
 
 export const getAllRequests = async (filters = {}) => {
-  return await MaintenanceRequest.find(filters)
+  // Defense-in-depth: reject/strip any keys containing '$' or prohibited operators
+  const sanitized = {};
+  for (const [key, val] of Object.entries(filters)) {
+    if (!key.startsWith("$") && !key.includes(".")) {
+      sanitized[key] = val;
+    }
+  }
+  return await MaintenanceRequest.find(sanitized)
     .populate("wellId requestedBy assignedTo")
     .sort({ createdAt: -1 });
 };
